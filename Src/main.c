@@ -40,7 +40,7 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
-#define outRF GPIO_Pin_0
+
 
 #define L3G_Sensitivity_250dps     (float)   114.285f         /*!< gyroscope sensitivity with 250 dps full scale [LSB/dps] */
 #define L3G_Sensitivity_500dps     (float)    57.1429f        /*!< gyroscope sensitivity with 500 dps full scale [LSB/dps] */
@@ -73,9 +73,8 @@ __IO uint32_t TimingDelay = 0;
 float MagBuffer[3] = {0.0f}, AccBuffer[3] = {0.0f}, Buffer[3] = {0.0f};
 uint8_t Xval, Yval = 0x00;
 
-int var = 0;
-int titi;
-int valeur = 0;
+int valeurServo1 = 0;
+int valeurServo2 = 0;
 GPIO_InitTypeDef  GPIO_InitStructure;
 
 
@@ -83,8 +82,8 @@ GPIO_InitTypeDef  GPIO_InitStructure;
 static void TIM_Config(void);
 void ButtonPush_Handle(uint16_t pin1,uint16_t pin2);
 void Gyro_Handle(void);
-void turn_Right();
-void turn_Left();
+void turn_Right(uint16_t gpio_servo);
+void turn_Left(uint16_t gpio_servo);
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -133,15 +132,19 @@ int main(void)
   TIM_Cmd(TIM3, ENABLE);
 	
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA	, ENABLE);
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC	, ENABLE);
 
-	/* Configure the GPIO_LED pin */   
-	GPIO_InitStructure.GPIO_Pin = outRF;
+	/* Configure the GPIO_SERVO 1 pin */   
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 ;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
   GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   //GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);	
+	
 
+	GPIO_Init(GPIOA, &GPIO_InitStructure);	
+	GPIO_Init(GPIOC, &GPIO_InitStructure);	
+	
 
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB	, ENABLE);
 	
@@ -156,6 +159,9 @@ int main(void)
 	//STM_EVAL_PBInit(BUTTON_USER, BUTTON_MODE_EXTI); 
   /* Reset UserButton_Pressed variable */
   //UserButtonPressed = 0x00; 
+	
+	setAngle(SERVO_1,90);
+	setAngle(SERVO_2,90);
 
   /* Infinite loop */
   while (1)
@@ -168,88 +174,103 @@ int main(void)
 }
 
 /**
-*  Control servomotor with push button impulsion
+*  Control Servo1 with push button impulsion
 *
 **/
 void ButtonPush_Handle(uint16_t pin1,uint16_t pin2){
 	
 		if(GPIO_ReadInputDataBit(GPIOB,pin1) == 0 )   // bouton incrémenté (enfoncé)
 		{
-			 turn_Right();
+			 turn_Right(SERVO_1);
 		}
 		if(GPIO_ReadInputDataBit(GPIOB,pin2) == 0)   // bouton décrémenté   (enfoncé)
 		{
-			 turn_Left();
+			 turn_Left(SERVO_1);
 		}
 	
 }
 
-void turn_Right(){
-		 valeur ++;
-			if(valeur >180)
-			{ 
-				valeur =0;
-			}	
-		 setAngle(valeur);
-
+void turn_Right(uint16_t gpio_servo){
+	
+	if (gpio_servo == SERVO_1){
+		if(valeurServo1 <180)
+		{ 
+			valeurServo1++;
+			setAngle(gpio_servo,valeurServo1);
+		}
+	}else if (gpio_servo == SERVO_2){
+		if(valeurServo2 <180)
+		{ 
+			valeurServo2++;
+			setAngle(gpio_servo,valeurServo2);
+		}
+	}
 }
 
-void turn_Left(){
-			valeur --;
-			if(valeur <0 )
-			{
-				valeur = 180;
-			}
-		  setAngle(valeur);
+void turn_Left(uint16_t gpio_servo){
+
+	if (gpio_servo == SERVO_1){
+		if(valeurServo1 >0)
+		{ 
+			valeurServo1--;
+			setAngle(gpio_servo,valeurServo1);
+		}
+	}else if (gpio_servo == SERVO_2){
+		if(valeurServo2 >0)
+		{ 
+			valeurServo2--;
+			setAngle(gpio_servo,valeurServo2);
+		}
+	}
 }
 
 
 void Gyro_Handle(void){
 	
-			/* Demo Gyroscope */
+		/* Demo Gyroscope */
     Demo_GyroConfig();
 		
 		
 	  /* Read Gyro Angular data */
     Demo_GyroReadAngRate(Buffer);
          
-      /* Update autoreload and capture compare registers value*/
-      Xval = ABS((int8_t)(Buffer[0]));
-      Yval = ABS((int8_t)(Buffer[1])); 
+    /* Update autoreload and capture compare registers value*/
+    Xval = ABS((int8_t)(Buffer[0]));
+    Yval = ABS((int8_t)(Buffer[1])); 
       
-      if ( Xval>Yval)
-      {
-        if ((int8_t)Buffer[0] > 5.0f)
-        { 
+    if ( Xval>Yval)
+    {
+       if ((int8_t)Buffer[0] > 5.0f)  //South
+       { 
           /* LD10 On */
           STM_EVAL_LEDOn(LED10);
-					
-					turn_Right();
-					
-					
-        }
-        if ((int8_t)Buffer[0] < -5.0f)
-        { 
-          /* LD3 On */
-          STM_EVAL_LEDOn(LED3);
-					
-				  turn_Left();
-      }
-      else
+					turn_Right(SERVO_1);	
+       }
+        
+			if ((int8_t)Buffer[0] < -5.0f) //North
+      { 
+         /* LD3 On */
+         STM_EVAL_LEDOn(LED3);	
+				 turn_Left(SERVO_1);
+			}
+		}
+    else
+    {
+			if ((int8_t)Buffer[1] < -5.0f) //West
       {
-        if ((int8_t)Buffer[1] < -5.0f)
-        {
-          /* LD6 on */
-          STM_EVAL_LEDOn(LED6);
-        }
-        if ((int8_t)Buffer[1] > 5.0f)
-        {
-          /* LD7 On */
-          STM_EVAL_LEDOn(LED7);
-        } 
+         /* LD6 on */
+        STM_EVAL_LEDOn(LED6);
+				turn_Right(SERVO_2);	
       }
-			
-		/* LEDs Off */
+      if ((int8_t)Buffer[1] > 5.0f) //East
+      {
+         /* LD7 On */
+        STM_EVAL_LEDOn(LED7);
+				turn_Left(SERVO_2);	
+      } 
+    }
+	
+		/* Reset Gyroscope LEDs Off */
     STM_EVAL_LEDOff(LED4);
     STM_EVAL_LEDOff(LED3);
     STM_EVAL_LEDOff(LED6);

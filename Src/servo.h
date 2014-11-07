@@ -5,7 +5,10 @@
 
 #include "stm32f30x.h"
 
-void setAngle(int angle);
-void setToAngle(int angle);
+#define SERVO_1 0
+#define SERVO_2 1
+
+void setAngle(uint16_t gpio_servo,int angle);
+
 
 #endif
