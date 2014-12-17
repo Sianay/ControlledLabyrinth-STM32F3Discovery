@@ -7,17 +7,15 @@ volatile unsigned short testvar = 0;
 unsigned short servo1CurrentAngle = 0;
 unsigned short servo2CurrentAngle = 0;
 
-
-
-
-
-
-
+int valeurServo1 = 0;
+int valeurServo2 = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 /*wait desired time in ticks (one tick is 0.564 ms)*/
 void waitTicks(unsigned long time); 
 void setToAngle(uint16_t gpio_servo,int angle);
+
+
 
 /**
   * @brief  This function handles TIM3 global interrupt request.
@@ -42,7 +40,20 @@ void waitTicks(unsigned long time)
 	while(count < max);	 //the count is incremented by the timer handler 
 }
 
-
+void setGyroAngle(uint16_t gpio_servo,int angle)
+{
+	int newAngle = angle;
+	if(newAngle<-90)
+	{
+			newAngle=-90;
+	}
+	else if(newAngle>90)
+	{
+			newAngle=90;
+	}
+	
+	setAngle(gpio_servo,newAngle+90);
+}
 
 void setAngle(uint16_t gpio_servo,int angle)
 {
@@ -101,12 +112,46 @@ void setToAngle(uint16_t gpio_servo,int angle)
 	total = total-(angle*10); //soustraction du temps du mouvement de l'angle
 	
 	if (gpio_servo == SERVO_1){
-		GPIOA->BRR = 0x0001; //set pin to 1
+		GPIOA->BRR = 0x0001; //set pin to 0
 	}else if (gpio_servo == SERVO_2){
-		GPIOC->BRR = 0x0001; //set pin to 1
+		GPIOC->BRR = 0x0001; //set pin to 0
 	}
 	total = total/10;
 	
 	waitTicks((unsigned long)total);
 
+}
+
+void turn_Right(uint16_t gpio_servo){
+	
+	if (gpio_servo == SERVO_1){
+		if(valeurServo1 <180)
+		{ 
+			valeurServo1++;
+			setAngle(gpio_servo,valeurServo1);
+		}
+	}else if (gpio_servo == SERVO_2){
+		if(valeurServo2 <180)
+		{ 
+			valeurServo2++;
+			setAngle(gpio_servo,valeurServo2);
+		}
+	}
+}
+
+void turn_Left(uint16_t gpio_servo){
+
+	if (gpio_servo == SERVO_1){
+		if(valeurServo1 >0)
+		{ 
+			valeurServo1--;
+			setAngle(gpio_servo,valeurServo1);
+		}
+	}else if (gpio_servo == SERVO_2){
+		if(valeurServo2 >0)
+		{ 
+			valeurServo2--;
+			setAngle(gpio_servo,valeurServo2);
+		}
+	}
 }

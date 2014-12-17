@@ -57,8 +57,6 @@
 
 
 /* Private variables ---------------------------------------------------------*/
-uint8_t rx_buffer[RX_BUFFER_LENGTH];
-uint8_t rx_counter = 0;
 
 
 TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
@@ -73,21 +71,19 @@ __IO uint32_t TimingDelay = 0;
 
 float MagBuffer[3] = {0.0f}, AccBuffer[3] = {0.0f}, Buffer[3] = {0.0f};
 uint8_t Xval, Yval = 0x00;
+uint8_t Xphoneval, Yphoneval = 0x00;
 
 
-int valeurServo1 = 0;
-int valeurServo2 = 0;
 GPIO_InitTypeDef  GPIO_InitStructure;
-USART_InitTypeDef USART_InitStructure;
-NVIC_InitTypeDef NVIC_InitStructure;
+int xGyroPhoneValue;
+int yGyroPhoneValue;
 
 
 /* Private function prototypes -----------------------------------------------*/
 static void TIM_Config(void);
 void ButtonPush_Handle(uint16_t pin1,uint16_t pin2);
 void Gyro_Handle(void);
-void turn_Right(uint16_t gpio_servo);
-void turn_Left(uint16_t gpio_servo);
+void handlePhoneGyroValue(int angleX,int angleY);
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -135,6 +131,9 @@ int main(void)
   /* TIM3 enable counter */
   TIM_Cmd(TIM3, ENABLE);
 	
+	initGPIODetectionChute();
+
+
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA	, ENABLE);
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC	, ENABLE);
 
@@ -160,133 +159,63 @@ int main(void)
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP; 
   GPIO_Init(GPIOB, &GPIO_InitStructure);	
 	
-	// initialisation des broches RX et TX 
-	
-	 /* Enable USART clock */
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
-	
-    /* Connect PXx to USARTx_Tx */
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_7);
-
-    /* Connect PXx to USARTx_Rx */
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_7);
-	
-		/* Configure USART Tx as alternate function push-pull */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-    //GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    //GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-    /* Configure USART Rx as alternate function push-pull */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-    /* USART configuration */
-    USART_InitStructure.USART_BaudRate = 57600 ;
-    USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-    USART_InitStructure.USART_StopBits = USART_StopBits_1;
-    USART_InitStructure.USART_Parity = USART_Parity_No;
-    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-    USART_Init(USART2, &USART_InitStructure);
-	
-	
-	/* Enable the USART2 Receive interrupt: this interrupt is generated when the
-                     USART2 receive data register is not empty */
-    USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
-		
-
-        /* Enable the USART2 Interrupt */
-    NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
-	
-	
-		NVIC_EnableIRQ(USART2_IRQn);
-	
-	/* Enable USART */
-    USART_Cmd(USART2, ENABLE);
-	
+	initUART();
 	
 	//STM_EVAL_PBInit(BUTTON_USER, BUTTON_MODE_EXTI); 
   /* Reset UserButton_Pressed variable */
   //UserButtonPressed = 0x00; 
 	
-	setAngle(SERVO_1,90);
-	setAngle(SERVO_2,90);
-
+	setGyroAngle(SERVO_1,0);
+	setGyroAngle(SERVO_2,0);
+	
   /* Infinite loop */
   while (1)
   {		
-		//ButtonPush_Handle(GPIO_Pin_0,GPIO_Pin_1);		
-		//Gyro_Handle();	
-	
-		printf("123");	
-
+		ButtonPush_Handle(GPIO_Pin_0,GPIO_Pin_1);		
+		Gyro_Handle();	
+		
+		startDetectionChute();
+		handlePhoneGyroValue(xGyroPhoneValue,yGyroPhoneValue);
   }	
 
 
 }
 
-
-
-PUTCHAR_PROTOTYPE
-{
-    /* Put character on the serial line */
-    USART2->TDR = (ch & (uint16_t)0x01FF);
-
-    /* Loop until transmit data register is empty */
-    while ((USART2->ISR & USART_FLAG_TXE) == (uint16_t) RESET);
-
-    return ch;
-}
-
-
-
-
-
-
-
-uint8_t USART2_ReadChar()
-{
-    while(USART_GetFlagStatus(USART2, USART_FLAG_RXNE) == RESET);
-    return USART_ReceiveData(USART2);
+void handlePhoneGyroValue(int angleX,int angleY){
+	
+	   Xphoneval = ABS((int8_t)(angleX));
+     Yphoneval = ABS((int8_t)(angleY)); 
 	
 	
-}
-
-/**
- * @brief  This function handles USART2 global interrupt request.
- * @param  None
- * @retval None
- */
-void USART2_IRQHandler(void)
-{
-    if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
+	    if ( Xphoneval>Yphoneval)
     {
-        /* Read one byte from the receive data register */
-        rx_buffer[rx_counter] = (USART_ReceiveData(USART2) & 0x7F);
+       if (angleX < 0 && angleX >=-90)  //South
+       { 
 
-        if(rx_counter + 1 == RX_BUFFER_LENGTH ||
-                rx_buffer[rx_counter] == '\n' || rx_buffer[rx_counter] == '\r')
-        {
-            printf("%s\n\r", rx_buffer);
-            memset(rx_buffer, 0, RX_BUFFER_LENGTH);
-            rx_counter = 0;
-        }
-        else
-        {
-            rx_counter++;
-        }
+					turn_Right(SERVO_1);	
+       }
+        
+			if (angleX > 0 && angleX <= 90) //North
+      { 
+
+				 turn_Left(SERVO_1);
+			}
+		}
+    else
+    {
+			if (angleY < 0 && angleY >=-90) //West
+      {
+
+				turn_Right(SERVO_2);	
+      }
+      if (angleY > 0 && angleY <= 90) //East
+      {
+				turn_Left(SERVO_2);	
+      } 
     }
+	
+	
 }
-
-
-
 
 /**
 *  Control Servo1 with push button impulsion
@@ -305,39 +234,7 @@ void ButtonPush_Handle(uint16_t pin1,uint16_t pin2){
 	
 }
 
-void turn_Right(uint16_t gpio_servo){
-	
-	if (gpio_servo == SERVO_1){
-		if(valeurServo1 <180)
-		{ 
-			valeurServo1++;
-			setAngle(gpio_servo,valeurServo1);
-		}
-	}else if (gpio_servo == SERVO_2){
-		if(valeurServo2 <180)
-		{ 
-			valeurServo2++;
-			setAngle(gpio_servo,valeurServo2);
-		}
-	}
-}
 
-void turn_Left(uint16_t gpio_servo){
-
-	if (gpio_servo == SERVO_1){
-		if(valeurServo1 >0)
-		{ 
-			valeurServo1--;
-			setAngle(gpio_servo,valeurServo1);
-		}
-	}else if (gpio_servo == SERVO_2){
-		if(valeurServo2 >0)
-		{ 
-			valeurServo2--;
-			setAngle(gpio_servo,valeurServo2);
-		}
-	}
-}
 
 
 void Gyro_Handle(void){
