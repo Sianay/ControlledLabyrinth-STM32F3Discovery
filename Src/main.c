@@ -71,7 +71,7 @@ __IO uint32_t TimingDelay = 0;
 
 float MagBuffer[3] = {0.0f}, AccBuffer[3] = {0.0f}, Buffer[3] = {0.0f};
 uint8_t Xval, Yval = 0x00;
-uint8_t Xphoneval, Yphoneval = 0x00;
+
 
 
 GPIO_InitTypeDef  GPIO_InitStructure;
@@ -83,7 +83,7 @@ int yGyroPhoneValue;
 static void TIM_Config(void);
 void ButtonPush_Handle(uint16_t pin1,uint16_t pin2);
 void Gyro_Handle(void);
-void handlePhoneGyroValue(int angleX,int angleY);
+
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -165,57 +165,28 @@ int main(void)
   /* Reset UserButton_Pressed variable */
   //UserButtonPressed = 0x00; 
 	
-	setGyroAngle(SERVO_1,0);
-	setGyroAngle(SERVO_2,0);
-	
+	//setGyroAngles(0,0);
+		
   /* Infinite loop */
+	initServos();
+
+			
   while (1)
-  {		
+  {	
+
 		ButtonPush_Handle(GPIO_Pin_0,GPIO_Pin_1);		
 		Gyro_Handle();	
 		
+		setAngleServos(xGyroPhoneValue,yGyroPhoneValue);
+
 		startDetectionChute();
-		handlePhoneGyroValue(xGyroPhoneValue,yGyroPhoneValue);
+
   }	
 
 
 }
 
-void handlePhoneGyroValue(int angleX,int angleY){
-	
-	   Xphoneval = ABS((int8_t)(angleX));
-     Yphoneval = ABS((int8_t)(angleY)); 
-	
-	
-	    if ( Xphoneval>Yphoneval)
-    {
-       if (angleX < 0 && angleX >=-90)  //South
-       { 
 
-					turn_Right(SERVO_1);	
-       }
-        
-			if (angleX > 0 && angleX <= 90) //North
-      { 
-
-				 turn_Left(SERVO_1);
-			}
-		}
-    else
-    {
-			if (angleY < 0 && angleY >=-90) //West
-      {
-
-				turn_Right(SERVO_2);	
-      }
-      if (angleY > 0 && angleY <= 90) //East
-      {
-				turn_Left(SERVO_2);	
-      } 
-    }
-	
-	
-}
 
 /**
 *  Control Servo1 with push button impulsion
