@@ -40,6 +40,9 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
+#define ENABLE_GYROSCOPE   0 
+#define ENABLE_BUTTON   0 
+#define ENABLE_UART   1 
 
 
 #define L3G_Sensitivity_250dps     (float)   114.285f         /*!< gyroscope sensitivity with 250 dps full scale [LSB/dps] */
@@ -131,7 +134,7 @@ int main(void)
   /* TIM3 enable counter */
   TIM_Cmd(TIM3, ENABLE);
 	
-	initGPIODetectionChute();
+
 
 
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA	, ENABLE);
@@ -159,25 +162,33 @@ int main(void)
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP; 
   GPIO_Init(GPIOB, &GPIO_InitStructure);	
 	
+	initGPIODetectionChute();
 	initUART();
 	
 	//STM_EVAL_PBInit(BUTTON_USER, BUTTON_MODE_EXTI); 
   /* Reset UserButton_Pressed variable */
   //UserButtonPressed = 0x00; 
 	
-	//setGyroAngles(0,0);
+	
+	//setAngleServos(0,0);
 		
-  /* Infinite loop */
 	initServos();
 
-			
+	/* Infinite loop */		
   while (1)
   {	
-
-		ButtonPush_Handle(GPIO_Pin_0,GPIO_Pin_1);		
-		Gyro_Handle();	
 		
+#ifdef  ENABLE_BUTTON		
+		ButtonPush_Handle(GPIO_Pin_0,GPIO_Pin_1);
+#endif 
+
+#ifdef  ENABLE_GYROSCOPE			
+		Gyro_Handle();
+#endif  			
+		
+#ifdef  ENABLE_UART		
 		setAngleServos(xGyroPhoneValue,yGyroPhoneValue);
+#endif  
 
 		startDetectionChute();
 

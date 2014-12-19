@@ -1,7 +1,7 @@
 #include "servo.h"
 
-#define MIN_ANGLE -20
-#define MAX_ANGLE 20
+#define MIN_ANGLE -35
+#define MAX_ANGLE 35
 
 #define ETAPE_1_SERVO 1 //envoi des 600us
 #define ETAPE_2_SERVO 2	//envoi du signal
@@ -16,22 +16,24 @@ unsigned short servo1CurrentAngle = 0;
 unsigned short servo2CurrentAngle = 0;
 unsigned long dest = 0;
 
-int valeurServo1 = 0;
-int valeurServo2 = 0;
+//int valeurServo1 = 0;
+//int valeurServo2 = 0;
 
-int oldAngleX =500;
-int oldAngleY =500;
+//int oldAngleX =500;
+//int oldAngleY =500;
 
+
+int tempAngleX =0;
+int tempAngleY =0;
 
 long nombreDeTickAAttendreServo1=0;
 long nombreDeTickAAttendreServo2=0;
 
-int angleDeDestinationServo1=0;
-int angleDeDestinationServo2=0;
+volatile int angleDeDestinationServo1=0;
+volatile int angleDeDestinationServo2=0;
 
 int etapeSignalServo1=1;
 int etapeSignalServo2=0;
-
 
 
 uint8_t Xphoneval, Yphoneval = 0x00;
@@ -55,7 +57,6 @@ void TIM3_IRQHandler(void)
 			TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
 			count++;
 			
-		
 			if(nombreDeTickAAttendreServo1>0)
 				nombreDeTickAAttendreServo1--;
 						
@@ -144,19 +145,29 @@ int getAngleBetweenMinAndMax(int angle)
 			newAngle=MAX_ANGLE;
 	}
 	
-	return angle;
+	return newAngle;
 }
 
 void setAngleServo1(int angle)
 {
+	if(angle<-90 || angle >90)
+	{
+			tempAngleX=angle;
+			tempAngleX=angle;
+	}
+	tempAngleX=angle;
+	
 	angleDeDestinationServo1 = getAngleBetweenMinAndMax(angle)+90;
 }
 
 void setAngleServo2(int angle)
 {
+	tempAngleY=angle;
+
 	angleDeDestinationServo2 = getAngleBetweenMinAndMax(angle)+90;
 }
 
+/* angle entre -90 et 90 */
 void setAngleServos(int angleServo1, int angleServo2)
 {
 	setAngleServo1(angleServo1);
@@ -185,7 +196,7 @@ int getAngleBetween90(int angle )
 			newAngle=MAX_ANGLE;
 	}
 	
-	return angle;
+	return newAngle;
 }
 
 
@@ -215,7 +226,7 @@ void setAngle(uint16_t gpio_servo,int angle)
 	interm = interm/10.0F;
 	dest = count + (unsigned long) interm; 
 	
-		if (gpio_servo == SERVO_1){
+	if (gpio_servo == SERVO_1){
 		servo1CurrentAngle = angle;
 	}else if (gpio_servo == SERVO_2){
 		servo2CurrentAngle = angle;
@@ -261,16 +272,14 @@ void setToAngle(uint16_t gpio_servo,int angle)
 void turn_Right(uint16_t gpio_servo){
 	
 	if (gpio_servo == SERVO_1){
-		if(valeurServo1 <180)
+		if(angleDeDestinationServo1 <180)
 		{ 
-			valeurServo1++;
-			setAngle(gpio_servo,valeurServo1);
+			angleDeDestinationServo1++;
 		}
 	}else if (gpio_servo == SERVO_2){
-		if(valeurServo2 <180)
+		if(angleDeDestinationServo2 <180)
 		{ 
-			valeurServo2++;
-			setAngle(gpio_servo,valeurServo2);
+			angleDeDestinationServo2++;
 		}
 	}
 }
@@ -278,16 +287,15 @@ void turn_Right(uint16_t gpio_servo){
 void turn_Left(uint16_t gpio_servo){
 
 	if (gpio_servo == SERVO_1){
-		if(valeurServo1 >0)
+		if(angleDeDestinationServo1 >0)
 		{ 
-			valeurServo1--;
-			setAngle(gpio_servo,valeurServo1);
+			angleDeDestinationServo1--;
+
 		}
 	}else if (gpio_servo == SERVO_2){
-		if(valeurServo2 >0)
+		if(angleDeDestinationServo2 >0)
 		{ 
-			valeurServo2--;
-			setAngle(gpio_servo,valeurServo2);
+			angleDeDestinationServo2--;
 		}
 	}
 }
