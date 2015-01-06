@@ -81,38 +81,46 @@ void startDetectionChute()
 		{
 			 	for (i=0; i<=nombreDeLigne;i++)
 				{
-					portDeSortieAAllumer = 1<<i;
-					//ALLUMER GPIO OUT pour la ligne i
-					GPIOD->BSRR = portDeSortieAAllumer; //set pin to 1
-	
-							while(k<10000)
-		{
-			k++;
-		}
-		k=0;
-		
-					trouEnCours = (i*nombreDeLigne)+j+1;
-
-					if(trouEnCours < nombreDeTrouTotal)
-					{
-							//si le port est a 1 sur la ligne j
-							if(GPIO_ReadInputDataBit(GPIOB,pinLecture[j]) == 1)
-							{
-								trouEnCours=trouEnCours - 1;
-								
-								trouEnCours=trouEnCours + 1;
-									//chute bille dans trouEnCours
-										//GPIOE->BSRR = 0x0800; //set pin to 1
-								printf("#%d#",trouEnCours);
-							}
-							else
-							{
-										//GPIOE->BRR = 0x0800; //set pin to 1
-
-							}
-					}
+						portDeSortieAAllumer = 1<<i;
+						//ALLUMER GPIO OUT pour la ligne i
+						GPIOD->BSRR = portDeSortieAAllumer; //set pin to 1
 					
-					GPIOD->BRR = portDeSortieAAllumer; //set pin to 0
+						while(k<5000)
+						{
+							k++;
+						}
+						k=0;
+			
+						trouEnCours = (j*nombreDeColonne)+i+1;
+
+						if(trouEnCours <= nombreDeTrouTotal)
+						{
+							
+								//si le port est a 1 sur la ligne j
+								if(GPIO_ReadInputDataBit(GPIOB,pinLecture[j]) == 1)
+								{
+									trouEnCours=trouEnCours - 1;
+									
+									trouEnCours=trouEnCours + 1;
+										//chute bille dans trouEnCours
+											//GPIOE->BSRR = 0x0800; //set pin to 1
+									printf("#%d#",trouEnCours);
+									
+															while(k<500)
+						{
+							k++;
+						}
+						k=0;
+
+								}
+								else
+								{
+											//GPIOE->BRR = 0x0800; //set pin to 1
+
+								}
+						}
+						
+						GPIOD->BRR = portDeSortieAAllumer; //set pin to 0
 
 				}
 	}
