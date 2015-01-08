@@ -13,5 +13,6 @@ void initServos(void);
 
 void turn_Right(uint16_t gpio_servo);
 void turn_Left(uint16_t gpio_servo);
+void waitTicks(unsigned long time);  
 
 #endif

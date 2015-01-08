@@ -24,7 +24,6 @@
 
 #define RX_BUFFER_LENGTH    (100)
 
-
 void initUART(void);
 
 extern PUTCHAR_PROTOTYPE;

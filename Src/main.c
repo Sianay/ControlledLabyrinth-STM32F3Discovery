@@ -40,9 +40,9 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
-#define ENABLE_GYROSCOPE   0 
-#define ENABLE_BUTTON   0 
-#define ENABLE_UART   1 
+//#define ENABLE_GYROSCOPE
+//#define ENABLE_BUTTON
+#define ENABLE_UART
 
 
 #define L3G_Sensitivity_250dps     (float)   114.285f         /*!< gyroscope sensitivity with 250 dps full scale [LSB/dps] */
@@ -104,7 +104,7 @@ int main(void)
        file (startup_stm32f30x.s) before to branch to application main.
        To reconfigure the default setting of SystemInit() function, refer to
        system_stm32f30x.c file
-     */ 
+  */ 
 
   /* TIM Configuration */
   TIM_Config();
@@ -118,8 +118,7 @@ int main(void)
   TIM_TimeBaseStructure.TIM_ClockDivision = 1;
   TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
 	//TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-  TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
-	
+  TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;	
 
   TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
 
@@ -130,68 +129,72 @@ int main(void)
   /* TIM Interrupts enable */
 	TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE);
 
-
   /* TIM3 enable counter */
   TIM_Cmd(TIM3, ENABLE);
 	
-
-
-
+	
+	/* Configure the GPIO_SERVO 1 & 2 pin 0 */  
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA	, ENABLE);
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC	, ENABLE);
-
-	/* Configure the GPIO_SERVO 1 & 2 pin */   
+ 
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 ;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
   GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  //GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	
 
 	GPIO_Init(GPIOA, &GPIO_InitStructure);	
 	GPIO_Init(GPIOC, &GPIO_InitStructure);	
 	
+	
+	#ifdef  ENABLE_BUTTON		
 
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB	, ENABLE);
-	
-	/* Gestion des boutons sur PORT B */
-	/*GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 & GPIO_Pin_1;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP; 
-  GPIO_Init(GPIOB, &GPIO_InitStructure);	*/
-	
+		RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOF	, ENABLE);
+
+		/* Gestion des boutons sur PORT B */
+		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9 & GPIO_Pin_10;
+		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+		GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
+		GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP; 
+		GPIO_Init(GPIOF, &GPIO_InitStructure);
+		
+	#endif 
+
+   /* Detection Chute configuration */
 	initGPIODetectionChute();
+	
+	
+	#ifdef  ENABLE_UART		
+	/* UART configuration */
 	initUART();
+	#endif 
+
+
 	
 	//STM_EVAL_PBInit(BUTTON_USER, BUTTON_MODE_EXTI); 
   /* Reset UserButton_Pressed variable */
   //UserButtonPressed = 0x00; 
 	
-	
-	//setAngleServos(0,0);
-		
+   /* Reset angle servo  */	
+	setAngleServos(0,0);		
 	initServos();
 
 	/* Infinite loop */		
   while (1)
   {	
 		
-#ifdef  ENABLE_BUTTON		
-		ButtonPush_Handle(GPIO_Pin_0,GPIO_Pin_1);
-#endif 
+		#ifdef  ENABLE_BUTTON		
+				ButtonPush_Handle(GPIO_Pin_9,GPIO_Pin_10);
+		#endif 
 
-#ifdef  ENABLE_GYROSCOPE			
-		Gyro_Handle();
-#endif  			
+		#ifdef  ENABLE_GYROSCOPE			
+				Gyro_Handle();
+		#endif  			
 		
-#ifdef  ENABLE_UART		
-		setAngleServos(xGyroPhoneValue,yGyroPhoneValue);
-#endif  
-
+		#ifdef  ENABLE_UART		
+				setAngleServos(xGyroPhoneValue,yGyroPhoneValue);
+		#endif
 		startDetectionChute();
-
   }	
 
 
@@ -205,17 +208,16 @@ int main(void)
 **/
 void ButtonPush_Handle(uint16_t pin1,uint16_t pin2){
 	
-		if(GPIO_ReadInputDataBit(GPIOB,pin1) == 0 )   // bouton incrémenté (enfoncé)
+		if(GPIO_ReadInputDataBit(GPIOF,pin1) == 0 )   // bouton incrémenté (enfoncé)
 		{
 			 turn_Right(SERVO_1);
 		}
-		if(GPIO_ReadInputDataBit(GPIOB,pin2) == 0)   // bouton décrémenté   (enfoncé)
+		if(GPIO_ReadInputDataBit(GPIOF,pin2) == 0)   // bouton décrémenté   (enfoncé)
 		{
 			 turn_Left(SERVO_1);
 		}
 	
 }
-
 
 
 

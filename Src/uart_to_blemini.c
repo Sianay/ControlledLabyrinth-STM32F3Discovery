@@ -1,7 +1,5 @@
 #include "uart_to_blemini.h"
 
-
-
 USART_InitTypeDef USART_InitStructure;
 NVIC_InitTypeDef NVIC_InitStructure;
 GPIO_InitTypeDef  GPIO_InitStructure_UART;
@@ -10,15 +8,14 @@ uint8_t rx_counter = 0;
 uint8_t rx_buffer[RX_BUFFER_LENGTH];
 
 char* tokens;
-//int angleX=500;
-//int angleY=500;
 
 
-
+/*
+   Enable UART and RX/TX initialisation
+*/
 void initUART(void){
 	
-		// initialisation des broches RX et TX 
-	
+
 	 /* Enable USART clock */
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 	
@@ -73,9 +70,6 @@ void initUART(void){
 }
 
 
-
-
-
 /**
  * @brief  This function handles USART2 global interrupt request.
  * @param  None
@@ -84,40 +78,38 @@ void initUART(void){
 void USART2_IRQHandler(void)
 {
 
-	xGyroPhoneValue=500;
-	yGyroPhoneValue=500;
+	xGyroPhoneValue = 500;
+	yGyroPhoneValue = 500;
 	
-    if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
+  if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
+  {
+    /* Read one byte from the receive data register */
+    if((USART_ReceiveData(USART2) & 0x7F) == '/')
     {
-        /* Read one byte from the receive data register */
+			tokens = strtok ((char*)rx_buffer,",");
+			while (tokens != NULL)
+			{
+					if (xGyroPhoneValue==500)
+					{
+						xGyroPhoneValue = atoi(tokens);
+					}
+					else
+					{
+						yGyroPhoneValue = atoi(tokens);
+					}
+					tokens = strtok (NULL, ",");
+			}
 
-        if((USART_ReceiveData(USART2) & 0x7F) == '/')
-        {
-						tokens = strtok ((char*)rx_buffer,",");
-						while (tokens != NULL)
-						{
-								if (xGyroPhoneValue==500)
-								{
-									xGyroPhoneValue = atoi(tokens);
-								}
-								else
-								{
-									yGyroPhoneValue = atoi(tokens);
-								}
-								tokens = strtok (NULL, ",");
-						}
-            
+       memset(rx_buffer, 0, RX_BUFFER_LENGTH);
+       rx_counter = 0;
 						
-            memset(rx_buffer, 0, RX_BUFFER_LENGTH);
-            rx_counter = 0;
-						
-						printf("go");
-        }
-        else
-        {
-						rx_buffer[rx_counter] = (USART_ReceiveData(USART2) & 0x7F);
-            rx_counter++;
-        }				
+			  printf("go");
+     }
+     else
+     {
+				rx_buffer[rx_counter] = (USART_ReceiveData(USART2) & 0x7F);
+        rx_counter++;
+     }				
 
     }
 }
