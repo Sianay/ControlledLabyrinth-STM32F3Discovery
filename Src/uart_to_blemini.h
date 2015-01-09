@@ -1,6 +1,13 @@
 #ifndef __UART_TO_BLEMINI_H
 #define __UART_TO_BLEMINI_H
 
+/**
+********************************
+*  UART TO BLE MINI 
+********************************
+**/
+
+
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>

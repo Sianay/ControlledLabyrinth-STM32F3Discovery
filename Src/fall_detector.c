@@ -1,17 +1,22 @@
-#include "detection_chute.h"
+#include "fall_detector.h"
 #include "main.h"
 #include "servo.h"
 
-int nombreDeColonne = 7;
-int nombreDeLigne = 6;
-int nombreDeTrouTotal = 40;
-uint16_t portDeSortieAAllumer;
+/* Private variables ---------------------------------------------------------*/
+
+
+int columnNumber = 7;
+int lineNumber = 6;
+int fallTotalNumber = 40;
+uint16_t gpoToSwitchOn;
 
 const uint16_t pinLecture[] = {GPIO_Pin_0, GPIO_Pin_1, GPIO_Pin_2, GPIO_Pin_3, GPIO_Pin_4, GPIO_Pin_5};
 volatile unsigned char j;
-int trouEnCours;
+int currentFall;
 
-void initGPIODetectionChute()
+/* Private functions ---------------------------------------------------------*/
+
+void initGPIOFallDectector()
 {
 
 	GPIO_InitTypeDef  GPIO_InitStruct1;
@@ -37,39 +42,33 @@ void initGPIODetectionChute()
 	
 }
 
-void startDetectionChute()
+void startFallDetector()
 { 
-	//boucle sur chaque trou du jeu
 	int i;
-	
-	for (j=0; j<nombreDeColonne-1; j++)
+
+	for (j=0; j<columnNumber-1; j++)
 	{
-		for (i=0; i<=nombreDeLigne;i++)
+		for (i=0; i<=lineNumber;i++)
 		{
-			portDeSortieAAllumer = 1<<i;
-			//ALLUMER GPIO OUT pour la ligne i
-			GPIOD->BSRR = portDeSortieAAllumer; //set pin to 1
+			gpoToSwitchOn = 1<<i;
+			GPIOD->BSRR = gpoToSwitchOn; //set pin to 1
 
-			waitTicks(50);
+			waitTicks(20);
 
-			trouEnCours = (j*nombreDeColonne)+i+1;
+			currentFall = (j*columnNumber)+i+1;
 
-			if(trouEnCours <= nombreDeTrouTotal)
+			if(currentFall <= fallTotalNumber)
 			{
-
-				//si le port est a 1 sur la ligne j
 				if(GPIO_ReadInputDataBit(GPIOB,pinLecture[j]) == 1)
 				{
-					//chute bille dans trouEnCours
-					printf("#%d#",trouEnCours);
+					printf("#%d#",currentFall); //print to send to UART
 
 					waitTicks(1);
-
 				}
 
 			}
 
-			GPIOD->BRR = portDeSortieAAllumer; //set pin to 0
+			GPIOD->BRR = gpoToSwitchOn; //set pin to 0
 		}
 	}
 
